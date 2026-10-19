@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2937">
+<title>Kehoe's Garage – Job Board (alpha, sample data)</title>
+<style>
+  :root{
+    --ink:#111827; --muted:#4b5563; --line:#d1d5db; --bg:#f3f4f6; --card:#ffffff;
+    --red:#b91c1c; --red-bg:#fee2e2;
+    --s0:#475569; --s1:#1d4ed8; --s2:#7e22ce; --s3:#0f766e; --s4:#15803d;
+    --nav-h:68px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-bottom:calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  button,input,summary{font:inherit; touch-action:manipulation}
+  [hidden]{display:none!important}
+
+  /* ---------- Top banner (always visible) ---------- */
+  .top{position:sticky; top:0; z-index:20; background:#1f2937; color:#fff}
+  .top .bar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px}
+  .top h1{margin:0; font-size:1.05rem; font-weight:700}
+  .top .tag{font-size:.8rem; background:#fbbf24; color:#111; padding:2px 8px; border-radius:99px; font-weight:700; white-space:nowrap}
+  .sample{background:#fef3c7; color:#78350f; font-size:.9rem; padding:6px 14px; border-bottom:2px solid #f59e0b}
+  .warn{background:#fee2e2; color:#7f1d1d; font-size:.9rem; padding:6px 14px; border-bottom:2px solid #ef4444}
+
+  main{max-width:1100px; margin:0 auto; padding:14px}
+  h2{margin:4px 0 10px; font-size:1.35rem}
+  .sub{margin:0 0 12px; color:var(--muted); font-size:.95rem}
+
+  /* ---------- Bottom navigation: three big targets ---------- */
+  nav.tabs{position:fixed; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(3,1fr);
+    background:#111827; padding-bottom:env(safe-area-inset-bottom)}
+  nav.tabs button{min-height:var(--nav-h); border:0; background:transparent; color:#d1d5db; font-size:1.1rem; font-weight:700;
+    border-top:4px solid transparent; cursor:pointer}
+  nav.tabs button[aria-current="page"]{color:#fff; background:#1f2937; border-top-color:#fbbf24}
+
+  /* ---------- Stage colours (always paired with the stage name, never colour alone) ---------- */
+  .c0{--c:var(--s0)} .c1{--c:var(--s1)} .c2{--c:var(--s2)} .c3{--c:var(--s3)} .c4{--c:var(--s4)}
+  .chip{display:inline-block; background:var(--c); color:#fff; border-radius:8px; padding:3px 10px; font-weight:700; font-size:.95rem}
+
+  /* ---------- Workshop (big targets, no typing) ---------- */
+  .filters{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 12px}
+  .filters button{min-height:60px; padding:6px 8px; line-height:1.15; text-align:center; border:3px solid var(--line); background:#fff; border-radius:12px; font-weight:700; font-size:1.05rem; cursor:pointer}
+  .filters button[aria-pressed="true"]{border-color:#111827; background:#111827; color:#fff}
+  .undo{display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff7ed; border:3px solid #fb923c; border-radius:12px; padding:10px 12px; margin:0 0 12px}
+  .undo span{font-size:.95rem}
+  .undo button{min-height:60px; min-width:120px; border:0; border-radius:10px; background:#9a3412; color:#fff; font-weight:800; font-size:1.1rem; cursor:pointer}
+  @media (min-width:700px){ .filters{grid-template-columns:repeat(6,minmax(0,1fr))} }
+  .grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .card{background:var(--card); border:2px solid var(--line); border-left:10px solid var(--c); border-radius:14px; padding:12px 14px 14px}
+  .card .row{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .reg{font-size:1.55rem; font-weight:800; letter-spacing:.02em}
+  .job{font-size:1.05rem; font-weight:700; color:var(--muted)}
+  .carname{font-size:1.15rem; margin:2px 0 8px}
+  .stagerow{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px}
+  .time{color:var(--muted); font-size:.95rem}
+  .steps{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin:0 0 12px}
+  .steps i{height:8px; border-radius:4px; background:#e5e7eb}
+  .steps i.on{background:var(--c)}
+  .next{width:100%; min-height:84px; border:0; border-radius:12px; color:#fff; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 10px}
+  .next small{font-size:.9rem; opacity:.92; font-weight:600}
+  .next b{font-size:1.5rem; line-height:1.1}
+  .next:active{filter:brightness(.8); transform:scale(.99)}
+  .next.n1{background:var(--s1)} .next.n2{background:var(--s2)} .next.n3{background:var(--s3)} .next.n4{background:var(--s4)}
+  .skip{width:100%; min-height:64px; margin-top:10px; border:3px solid var(--s3); border-radius:12px; background:#fff; color:var(--s3); cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:6px 10px; font-weight:800}
+  .skip small{font-size:.85rem; font-weight:600; color:var(--muted)}
+  .skip b{font-size:1.2rem; line-height:1.15}
+  .skip:active{background:#ccfbf1; transform:scale(.99)}
+  .done-note{min-height:84px; border:3px dashed var(--s4); border-radius:12px; color:var(--s4); font-weight:800; font-size:1.2rem;
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:8px}
+  .empty{padding:24px; text-align:center; color:var(--muted); background:#fff; border:2px dashed var(--line); border-radius:12px}
+
+  /* ---------- Customer ---------- */
+  .panel{background:#fff; border:2px solid var(--line); border-radius:14px; padding:16px; max-width:560px}
+  label{display:block; font-weight:700; margin:0 0 4px}
+  input[type=text],input[type=search],input[type=tel]{width:100%; min-height:52px; padding:8px 12px; border:2px solid #9ca3af; border-radius:10px; font-size:1.1rem; background:#fff}
+  .field{margin:0 0 14px}
+  .hint{font-size:.9rem; color:var(--muted); margin:4px 0 0}
+  .btn{min-height:56px; padding:10px 20px; border:0; border-radius:12px; background:#111827; color:#fff; font-weight:800; font-size:1.1rem; cursor:pointer}
+  .btn.secondary{background:#fff; color:#111827; border:2px solid #111827}
+  .btn.danger{background:#fff; color:var(--red); border:2px solid var(--red)}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(251,191,36,.9)}100%{box-shadow:0 0 0 14px rgba(251,191,36,0)}}
+  .result.flash{animation:flash .9s ease-out 1}
+  #custResult{max-width:560px}
+  .result{margin:0 0 16px; max-width:560px; background:#fff; border:2px solid var(--line); border-radius:14px; padding:16px}
+  .result.err{border-color:#ef4444; background:#fef2f2}
+  .result h3{margin:0 0 2px; font-size:1.5rem}
+  .result .note{font-size:1.15rem; margin:10px 0}
+  ol.track{list-style:none; margin:14px 0 6px; padding:0}
+  ol.track li{display:flex; align-items:center; gap:10px; padding:6px 0; color:#6b7280}
+  ol.track li .n{width:28px; height:28px; border-radius:50%; background:#e5e7eb; display:grid; place-items:center; font-weight:800; font-size:.9rem; color:#374151}
+  ol.track li.past{color:#111827} ol.track li.past .n{background:#9ca3af; color:#fff}
+  ol.track li.now{color:#111827; font-weight:800} ol.track li.now .n{background:var(--c); color:#fff}
+  .demo{margin-top:18px; padding:10px 12px; border:2px dashed #f59e0b; background:#fffbeb; border-radius:10px; font-size:.9rem; max-width:560px}
+  .demo button{margin-top:6px; min-height:44px}
+
+  /* ---------- Office ---------- */
+  .tiles{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:14px}
+  .tile{background:#fff; border:2px solid var(--line); border-radius:12px; padding:10px 14px}
+  .tile .num{font-size:2.4rem; font-weight:800; line-height:1.1}
+  .tile.ready{border-color:var(--s4)} .tile.ready .num{color:var(--s4)}
+  .tile.alert.has{border-color:var(--red); background:var(--red-bg)} .tile.alert.has .num{color:var(--red)}
+  .group{margin:0 0 16px}
+  .stagebtn{display:inline-flex; align-items:center; gap:8px; min-height:52px; padding:4px 14px 4px 6px; border:3px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; font-weight:700}
+  .stagebtn .chip{font-size:1.05rem}
+  .stagebtn[aria-pressed="true"]{border-color:#111827}
+  .stagebtn:active{background:#e5e7eb}
+  .filterbar{display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fef3c7; border:3px solid #f59e0b; border-radius:12px; padding:8px 12px; margin:0 0 14px}
+  .filterbar span{font-weight:700}
+  .filterbar button{min-height:60px; min-width:130px; border:0; border-radius:10px; background:#111827; color:#fff; font-weight:800; font-size:1.1rem; cursor:pointer}
+  .tapnote{margin:0 0 10px; color:var(--muted); font-size:.95rem}
+  .group h3{margin:0 0 6px; display:flex; align-items:center; gap:8px; font-size:1.15rem}
+  .group h3 .count{background:#111827; color:#fff; border-radius:99px; padding:0 10px; font-size:.95rem}
+  .list{display:grid; gap:8px}
+  .item{background:#fff; border:2px solid var(--line); border-left:8px solid var(--c); border-radius:10px; padding:10px 12px; display:grid; gap:4px}
+  .item .l1{display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline}
+  .item .reg{font-size:1.2rem}
+  .item.red{background:var(--red-bg); border-color:var(--red); border-left-color:var(--red)}
+  .redflag{color:var(--red); font-weight:800}
+  .item .btn{min-height:52px; justify-self:start}
+  details.add{background:#fff; border:2px solid var(--line); border-radius:12px; padding:10px 14px; margin:18px 0}
+  details.add summary{cursor:pointer; font-weight:800; min-height:44px; display:flex; align-items:center}
+  .msg{margin:8px 0 0; font-weight:700}
+  .msg.bad{color:var(--red)} .msg.ok{color:var(--s4)}
+  footer.note{margin-top:22px; font-size:.85rem; color:var(--muted); max-width:700px}
+
+  @media (min-width:900px){ body{font-size:19px} }
+  @media (prefers-reduced-motion:no-preference){ .next{transition:filter .1s, transform .1s} }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="bar">
+    <h1>Kehoe's Garage · Job Board</h1>
+    <span class="tag">ALPHA</span>
+  </div>
+  <div class="sample"><strong>SAMPLE DATA.</strong> Every car, job number and customer name here is made up. Changes are saved in this browser only.</div>
+  <div class="warn" id="storageWarn" hidden><strong>Not saving:</strong> this browser is blocking storage, so changes will be lost on refresh.</div>
+</header>
+
+<main>
+
+  <!-- ================= WORKSHOP ================= -->
+  <section id="view-workshop" aria-labelledby="h-workshop">
+    <h2 id="h-workshop">Workshop · cars in today</h2>
+    <p class="sub">Tap the big button on a car to move it to its next stage. A car that needs no parts can skip straight to Being fixed. No typing.</p>
+    <div class="filters" id="wsFilters" role="group" aria-label="Show cars by stage"></div>
+    <div class="undo" id="wsUndo" hidden>
+      <span id="wsUndoText"></span>
+      <button type="button" data-act="undo">UNDO</button>
+    </div>
+    <div class="grid" id="wsGrid" aria-live="polite"></div>
+  </section>
+
+  <!-- ================= CUSTOMER ================= -->
+  <section id="view-customer" aria-labelledby="h-customer" hidden>
+    <h2 id="h-customer">Where is my car?</h2>
+    <p class="sub">Enter the job number from your job card and your car registration.</p>
+    <div id="custResult" aria-live="polite"></div>
+    <form class="panel" id="lookupForm" autocomplete="off" novalidate>
+      <div class="field">
+        <label for="jobIn">Job number</label>
+        <input id="jobIn" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 1045" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="regIn">Car registration</label>
+        <input id="regIn" type="text" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="e.g. 181-KK-3340" autocomplete="off">
+        <p class="hint">Dashes and spaces don't matter.</p>
+      </div>
+      <button class="btn" type="submit" id="checkBtn">Check status</button>
+    </form>
+    <div class="demo">
+      <strong>Demo helper (not part of the product):</strong> in the real thing a customer would use their own job card.
+      <br><button type="button" class="btn secondary" data-act="fillSample">Fill in a sample job</button>
+    </div>
+  </section>
+
+  <!-- ================= OFFICE ================= -->
+  <section id="view-office" aria-labelledby="h-office" hidden>
+    <h2 id="h-office">Office · all cars by stage</h2>
+    <div class="tiles" id="offTiles"></div>
+    <div id="offGroups"></div>
+
+    <details class="add">
+      <summary>+ Book a car in</summary>
+      <form id="addForm" autocomplete="off" novalidate>
+        <div class="field"><label for="addReg">Registration</label>
+          <input id="addReg" type="text" autocapitalize="characters" spellcheck="false" placeholder="e.g. 231-WX-1234"></div>
+        <div class="field"><label for="addCar">Car (make and model)</label>
+          <input id="addCar" type="text" placeholder="e.g. Ford Focus"></div>
+        <div class="field"><label for="addName">Customer first name</label>
+          <input id="addName" type="text" placeholder="e.g. Aoife"></div>
+        <button class="btn" type="submit">Book in</button>
+        <p class="msg" id="addMsg" role="status"></p>
+      </form>
+    </details>
+
+    <p><button type="button" class="btn danger" data-act="reset">Reset sample data</button></p>
+  </section>
+
+  <footer class="note">
+    Alpha for Kehoe's Garage, Enniscorthy. Sample data only. Data lives in this browser on this device, so a customer's phone does not see changes made on the workshop tablet (shared data is planned, not built). Nothing is sent anywhere.
+  </footer>
+</main>
+
+<nav class="tabs" aria-label="Views">
+  <button type="button" data-view="workshop">Workshop</button>
+  <button type="button" data-view="customer">Customer</button>
+  <button type="button" data-view="office">Office</button>
+</nav>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ================= Constants ================= */
+  var KEY = 'kehoes_job_board_alpha_v1';
+  var H = 3600000, D = 24 * H;
+  var RED_AFTER_MS = 2 * D;          // rule: waiting for parts for MORE than 2 days = red
+  var WAITING = 2, READY = 4, COLLECTED = 5;
+  var STAGES = [
+    { name: 'Booked in',        note: 'Your car is booked in. A mechanic will start checking it soon.' },
+    { name: 'Being checked',    note: 'A mechanic is looking at your car to see what it needs.' },
+    { name: 'Waiting for parts',note: 'We are waiting for a part to arrive for your car. We will be in touch when it is here.' },
+    { name: 'Being fixed',      note: 'The work on your car is under way.' },
+    { name: 'Ready to collect', note: 'Your car is ready. Please call in to collect it.' }
+  ];
+  var COLLECTED_NOTE = 'This car has been collected. Thanks for choosing Kehoe\u2019s Garage.';
+
+  /* ================= State + storage ================= */
+  var storageOk = true;
+  var state = load() || freshState();
+  var wsFilter = 'all';
+  var offFilter = 'all';
+  var lookup = null;
+  var lastMoveAt = 0;
+
+  function freshState(){
+    var n = Date.now();
+    function car(job, reg, name, cust, stage, hoursAgo){
+      return { job: String(job), reg: reg, car: name, customer: cust, stage: stage, since: n - hoursAgo * H };
+    }
+    return { v: 1, nextJob: 1053, undo: [], cars: [
+      car(1040,'171-WX-6120','Mazda 3','Fiona',5,1.5),
+      car(1041,'191-WX-2231','Ford Focus','Aoife',0,0.4),
+      car(1042,'07-WX-5518','Toyota Corolla','Se\u00e1n',0,1.2),
+      car(1043,'161-WD-0912','Nissan Qashqai','Niamh',1,2.5),
+      car(1044,'202-WX-7764','VW Golf','Declan',1,0.8),
+      car(1045,'181-KK-3340','Hyundai Tucson','Mary',2,122),   // 5 days 2 h  -> RED
+      car(1046,'172-WX-1189','Opel Astra','P\u00e1draig',2,46),   // 1 day 22 h -> not red yet
+      car(1047,'15-D-48207','Renault Clio','Eileen',2,53),     // 2 days 5 h -> RED
+      car(1048,'211-WX-6602','Skoda Octavia','Colm',3,1.5),
+      car(1049,'132-CW-1507','Ford Fiesta','R\u00f3is\u00edn',3,4),
+      car(1050,'192-WX-3876','Toyota Yaris','Brendan',4,3),
+      car(1051,'181-WX-9024','Kia Sportage','Gr\u00e1inne',4,26),
+      car(1052,'222-WX-4410','Peugeot 208','Sin\u00e9ad',4,0.6)
+    ]};
+  }
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return null;
+      var s = JSON.parse(raw);
+      if(s && s.v === 1 && Array.isArray(s.cars)) { if(!Array.isArray(s.undo)) s.undo = []; return s; }
+    }catch(e){ storageOk = false; }
+    return null;
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; }
+    catch(e){ storageOk = false; }
+    document.getElementById('storageWarn').hidden = storageOk;
+  }
+  // probe storage once so the warning shows even before the first change
+  (function(){ try{ localStorage.setItem(KEY + '_t','1'); localStorage.removeItem(KEY + '_t'); }catch(e){ storageOk = false; }
+    document.getElementById('storageWarn').hidden = storageOk; })();
+  save();
+
+  /* ================= Helpers ================= */
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function normReg(s){ return String(s).toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function dur(ms){
+    if(ms < 60000) return 'just now';
+    var m = Math.floor(ms / 60000);
+    if(m < 60) return m + ' min';
+    var h = Math.floor(ms / H);
+    if(h < 24) return h + ' h';
+    var d = Math.floor(ms / D), rh = Math.floor((ms - d * D) / H);
+    return d + (d === 1 ? ' day' : ' days') + (rh ? ' ' + rh + ' h' : '');
+  }
+  function clock(){ var d = new Date(); function z(n){ return (n<10?'0':'') + n; } return z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds()); }
+  function inStage(c){ return Date.now() - c.since; }
+  function isRed(c){ return c.stage === WAITING && inStage(c) > RED_AFTER_MS; }
+  function find(job){ for(var i=0;i<state.cars.length;i++) if(state.cars[i].job === String(job)) return state.cars[i]; return null; }
+  function active(){ return state.cars.filter(function(c){ return c.stage !== COLLECTED; }); }
+  function stageName(s){ return s === COLLECTED ? 'Collected' : STAGES[s].name; }
+
+  /* ================= Actions ================= */
+  function moveCar(job, to){
+    var c = find(job); if(!c || to > COLLECTED) return;
+    state.undo.push({ job: c.job, stage: c.stage, since: c.since, label: c.car + ' (' + c.reg + ') \u2192 ' + stageName(to) });
+    if(state.undo.length > 25) state.undo.shift();
+    c.stage = to; c.since = Date.now();
+    save(); renderAll();
+  }
+  function undo(){
+    var u = state.undo.pop(); if(!u) return;
+    var c = find(u.job); if(c){ c.stage = u.stage; c.since = u.since; }
+    save(); renderAll();
+  }
+
+  /* ================= Rendering ================= */
+  function stepsBar(stage){
+    var h = '<div class="steps" aria-hidden="true">';
+    for(var i=0;i<5;i++) h += '<i class="' + (i <= stage ? 'on' : '') + '"></i>';
+    return h + '</div>';
+  }
+
+  function renderWorkshop(){
+    var cars = active().sort(function(a,b){ return Number(a.job) - Number(b.job); }); // fixed order: cards don't jump when tapped
+    // filters
+    var f = '<button type="button" data-filter="all" aria-pressed="' + (wsFilter==='all') + '">All ' + cars.length + '</button>';
+    for(var s=0;s<5;s++){
+      var n = cars.filter(function(c){ return c.stage === s; }).length;
+      f += '<button type="button" data-filter="' + s + '" aria-pressed="' + (wsFilter===s) + '">' + STAGES[s].name + '<br>' + n + '</button>';
+    }
+    document.getElementById('wsFilters').innerHTML = f;
+
+    // undo bar
+    var u = state.undo[state.undo.length - 1];
+    var ub = document.getElementById('wsUndo');
+    ub.hidden = !u;
+    if(u) document.getElementById('wsUndoText').textContent = 'Last move: ' + u.label;
+
+    var shown = wsFilter === 'all' ? cars : cars.filter(function(c){ return c.stage === wsFilter; });
+    if(!shown.length){ document.getElementById('wsGrid').innerHTML = '<div class="empty">No cars here.</div>'; return; }
+    document.getElementById('wsGrid').innerHTML = shown.map(function(c){
+      var next = c.stage + 1;
+      var action = c.stage < READY
+        ? '<button type="button" class="next n' + next + '" data-act="next" data-job="' + esc(c.job) + '"><small>Tap to move to</small><b>' + esc(STAGES[next].name) + ' \u2192</b></button>'
+        : '<div class="done-note">Ready. The office hands it over.</div>';
+      // Skip: a checked car that needs no parts goes straight to Being fixed (bypasses Waiting for parts)
+      if(c.stage === 1) action += '<button type="button" class="skip" data-act="skip" data-job="' + esc(c.job) + '"><small>No parts needed?</small><b>Skip to ' + esc(STAGES[3].name) + ' \u2192</b></button>';
+      return '<article class="card c' + c.stage + '">'
+        + '<div class="row"><span class="reg">' + esc(c.reg) + '</span><span class="job">Job ' + esc(c.job) + '</span></div>'
+        + '<div class="carname">' + esc(c.car) + '</div>'
+        + '<div class="stagerow"><span class="chip">' + esc(STAGES[c.stage].name) + '</span><span class="time">' + dur(inStage(c)) + (c.stage === 4 ? ' ready' : ' here') + '</span></div>'
+        + stepsBar(c.stage) + action + '</article>';
+    }).join('');
+  }
+
+  function renderOffice(){
+    var cars = active();
+    var ready = cars.filter(function(c){ return c.stage === READY; }).length;
+    var red = cars.filter(isRed).length;
+    var collected = state.cars.filter(function(c){ return c.stage === COLLECTED; }).length;
+    document.getElementById('offTiles').innerHTML =
+        '<div class="tile ready"><div class="num">' + ready + '</div>Ready, not yet collected</div>'
+      + '<div class="tile alert ' + (red ? 'has' : '') + '"><div class="num">' + red + '</div>Red: waiting for parts over 2 days</div>'
+      + '<div class="tile"><div class="num">' + cars.length + '</div>Cars in the garage (collected so far: ' + collected + ')</div>';
+
+    var out = '';
+    if(offFilter === 'all') out += '<p class="tapnote">Tap a stage name to show only that stage.</p>';
+    else out += '<div class="filterbar"><span>Showing only: ' + STAGES[offFilter].name + '</span><button type="button" data-act="showAll">Show all</button></div>';
+    for(var s=0;s<5;s++){
+      if(offFilter !== 'all' && offFilter !== s) continue;
+      var group = cars.filter(function(c){ return c.stage === s; });
+      // oldest in stage first, so the longest-waiting car is at the top
+      group.sort(function(a,b){ return a.since - b.since; });
+      out += '<div class="group c' + s + '"><h3><button type="button" class="stagebtn" data-ofilter="' + s + '" aria-pressed="' + (offFilter === s) + '"><span class="chip">' + STAGES[s].name + '</span><span class="count">' + group.length + '</span></button></h3><div class="list">';
+      if(!group.length) out += '<div class="empty">None</div>';
+      group.forEach(function(c){
+        var r = isRed(c);
+        out += '<div class="item c' + s + (r ? ' red' : '') + '">'
+          + '<div class="l1"><span class="reg">' + esc(c.reg) + '</span><span>' + esc(c.car) + '</span><span class="job">Job ' + esc(c.job) + ' \u00b7 ' + esc(c.customer) + '</span></div>'
+          + '<div class="time">' + (s === READY ? 'Ready for ' : s === WAITING ? 'Waiting for parts for ' : 'In this stage for ') + '<strong>' + dur(inStage(c)) + '</strong></div>'
+          + (r ? '<div class="redflag">RED: over 2 days. Ring ' + esc(c.customer) + '.</div>' : '')
+          + (s === READY ? '<button type="button" class="btn" data-act="collect" data-job="' + esc(c.job) + '">Mark collected</button>' : '')
+          + '</div>';
+      });
+      out += '</div></div>';
+    }
+    document.getElementById('offGroups').innerHTML = out;
+  }
+
+  function renderCustomer(){
+    var box = document.getElementById('custResult');
+    if(!lookup){ box.innerHTML = ''; return; }
+    var job = lookup.job.replace(/\D/g,'');
+    var reg = normReg(lookup.reg);
+    var c = job && reg ? find(job) : null;
+    // one generic message whether the job or the registration was wrong: reveals nothing about other cars
+    // "Checked at" uses lookup.at, which is fixed when the button is tapped, so redraws never change it
+    if(!c || normReg(c.reg) !== reg){
+      box.innerHTML = '<div class="result err" role="alert"><h3>We couldn\u2019t find that car</h3><p class="note">Please check the job number and registration on your job card, then try again.</p><div class="time">Checked at ' + lookup.at + '</div></div>';
+      return;
+    }
+    var st = c.stage, collected = st === COLLECTED;
+    var track = '<ol class="track">' + STAGES.map(function(s,i){
+      var cls = collected || i < st ? 'past' : i === st ? 'now' : '';
+      return '<li class="' + cls + '"><span class="n">' + (collected || i < st ? '\u2713' : i + 1) + '</span>' + s.name + '</li>';
+    }).join('') + '</ol>';
+    box.innerHTML = '<div class="result c' + (collected ? 4 : st) + '">'
+      + '<div class="job">Job ' + esc(c.job) + ' \u00b7 ' + esc(c.reg) + '</div>'
+      + '<h3>' + stageName(st) + '</h3>'
+      + '<p class="note">' + (collected ? COLLECTED_NOTE : STAGES[st].note) + '</p>'
+      + (collected ? '' : track)
+      + '<div class="time">Updated ' + (inStage(c) < 60000 ? 'just now' : dur(inStage(c)) + ' ago') + ' \u00b7 Checked at ' + lookup.at + '</div></div>';
+  }
+
+  function renderAll(){ renderWorkshop(); renderOffice(); renderCustomer(); }
+
+  /* ================= Events ================= */
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-act],[data-filter],[data-view],[data-ofilter]'); if(!t) return;
+    if(t.dataset.view){ showView(t.dataset.view); return; }
+    if(t.dataset.filter !== undefined){ wsFilter = t.dataset.filter === 'all' ? 'all' : Number(t.dataset.filter); renderWorkshop(); return; }
+    if(t.dataset.ofilter !== undefined){ offFilter = Number(t.dataset.ofilter); renderOffice(); window.scrollTo(0, 0); return; }
+    var act = t.dataset.act;
+    if(act === 'showAll'){ offFilter = 'all'; renderOffice(); return; }
+    if(act === 'next'){
+      // brief lock stops a double-tap with a greasy thumb moving the car twice
+      var now = Date.now(); if(now - lastMoveAt < 700) return; lastMoveAt = now;
+      var c = find(t.dataset.job); if(c && c.stage < READY) moveCar(c.job, c.stage + 1);
+    }
+    else if(act === 'skip'){
+      var now2 = Date.now(); if(now2 - lastMoveAt < 700) return; lastMoveAt = now2;
+      var sc = find(t.dataset.job); if(sc && sc.stage === 1) moveCar(sc.job, 3);
+    }
+    else if(act === 'undo'){ undo(); }
+    else if(act === 'collect'){ var cc = find(t.dataset.job); if(cc && cc.stage === READY) moveCar(cc.job, COLLECTED); }
+    else if(act === 'reset'){
+      if(confirm('Reset to the original sample data? Your changes will be lost.')){ state = freshState(); lookup = null; wsFilter = 'all'; offFilter = 'all'; save(); renderAll(); }
+    }
+    else if(act === 'fillSample'){
+      var withParts = active().filter(function(c){ return c.stage === WAITING; })[0];
+      var s = withParts || active()[0] || state.cars[0];
+      if(s){ document.getElementById('jobIn').value = s.job; document.getElementById('regIn').value = s.reg; }
+    }
+  });
+
+  function runLookup(e){
+    if(e && e.preventDefault) e.preventDefault();
+    lookup = { job: document.getElementById('jobIn').value, reg: document.getElementById('regIn').value, at: clock() };
+    renderCustomer();
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();   // closes the phone keyboard
+    var r = document.querySelector('#custResult .result');
+    if(r){
+      var hdr = document.querySelector('header.top').getBoundingClientRect().height;
+      window.scrollTo(0, Math.max(0, r.getBoundingClientRect().top + window.pageYOffset - hdr - 10));   // result sits just under the header, never hidden
+      r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash');
+    }
+  }
+  document.getElementById('checkBtn').addEventListener('click', runLookup);
+  document.getElementById('lookupForm').addEventListener('submit', runLookup);   // Enter / Go key
+
+  document.getElementById('addForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var reg = document.getElementById('addReg').value.trim().toUpperCase();
+    var car = document.getElementById('addCar').value.trim();
+    var name = document.getElementById('addName').value.trim();
+    var msg = document.getElementById('addMsg');
+    function bad(t){ msg.className = 'msg bad'; msg.textContent = t; }
+    if(!reg || !car || !name) return bad('Please fill in all three boxes.');
+    var dup = active().some(function(c){ return normReg(c.reg) === normReg(reg); });
+    if(dup) return bad('That registration is already on the board.');
+    var job = String(state.nextJob++);
+    state.cars.push({ job: job, reg: reg, car: car, customer: name, stage: 0, since: Date.now() });
+    save(); renderAll();
+    this.reset();
+    msg.className = 'msg ok'; msg.textContent = 'Booked in as job ' + job + '.';
+  });
+
+  /* ================= Views (hash links: #workshop  #customer  #office) ================= */
+  var VIEWS = ['workshop','customer','office'];
+  function showView(v){
+    if(VIEWS.indexOf(v) < 0) v = 'workshop';
+    VIEWS.forEach(function(n){ document.getElementById('view-' + n).hidden = (n !== v); });
+    Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function(b){
+      if(b.dataset.view === v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+    });
+    try{ history.replaceState(null,'','#' + v); }catch(e){}
+    window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange', function(){ showView(location.hash.slice(1)); });
+
+  /* keep times fresh, and pick up changes made in another tab of the same browser */
+  setInterval(renderAll, 60000);
+  window.addEventListener('storage', function(e){ if(e.key === KEY){ var s = load(); if(s){ state = s; renderAll(); } } });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) renderAll(); });
+
+  showView(location.hash.slice(1));
+  renderAll();
+})();
+</script>
+</body>
+</html>
